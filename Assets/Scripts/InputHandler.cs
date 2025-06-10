@@ -2,6 +2,8 @@
 
 public class InputHandler : MonoBehaviour
 {
+    [SerializeField] private VariableJoystick _joystick;
+    
     private const string Horizontal = nameof(Horizontal);
     private const string Vertical = nameof(Vertical);
 
@@ -17,6 +19,12 @@ public class InputHandler : MonoBehaviour
         VerticalDirection = Input.GetAxisRaw(Vertical);
         HorizontalDirection = Input.GetAxisRaw(Horizontal);
 
+        if (_joystick.Direction != Vector2.zero)
+        {
+            VerticalDirection = _joystick.Vertical;
+            HorizontalDirection = _joystick.Horizontal;
+        }
+        
         if (Input.GetKey(_runButton))
             IsRunning = true;
         else

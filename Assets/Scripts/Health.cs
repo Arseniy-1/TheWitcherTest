@@ -1,28 +1,28 @@
 ﻿using System.Collections.Generic;
+using UniRx;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class Health : MonoBehaviour
 {
     [SerializeField] private List<GameObject> _hearts;
-    [SerializeField] private List<Question> _questions;
 
+    private CompositeDisposable _compositeDisposable;
     public int HealthAmount { get; private set; } = 3;
 
     private void OnEnable()
     {
-        foreach (var question in _questions)
-        {
-            question.WrongAnswer += TakeDamage;
-        }
+        _compositeDisposable = new CompositeDisposable();
+        
+        MessageBrokerHolder.GameActions
+            .Receive<M_Answer>()
+            .Subscribe(message => HandleAnswer(message.IsCorrect))
+            .AddTo(_compositeDisposable);
     }
 
     private void OnDisable()
     {
-        foreach (var question in _questions)
-        {
-            question.WrongAnswer -= TakeDamage;
-        }
+        _compositeDisposable.Dispose();
     }
 
     private void Start()
@@ -30,7 +30,7 @@ public class Health : MonoBehaviour
         ShowHealth();
     }
 
-    public void TakeDamage()
+    private void TakeDamage()
     {
         HealthAmount--;
         
@@ -41,9 +41,14 @@ public class Health : MonoBehaviour
             Destroy(gameObject);
             SceneManager.LoadScene(0);
         }
-
     }
 
+    private void HandleAnswer(bool isCorrect)
+    {
+        if (isCorrect == false)
+            TakeDamage();
+    }
+    
     private void ShowHealth()
     {
         for (int i = 0; i < _hearts.Count; i++)

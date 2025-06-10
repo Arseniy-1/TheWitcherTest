@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using TMPro;
+using UniRx;
 using UnityEngine;
 
 //Application.targetFrameRate = 60;
@@ -7,10 +7,11 @@ using UnityEngine;
 public class Player : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI _text;
-    [SerializeField] private List<Question> _questions;
     [SerializeField] private ResultView _resultView;
 
     private IInteractable _currentIteract = null;
+    
+    private CompositeDisposable _compositeDisposable;
 
     private bool _hasKey = false;
 
@@ -18,18 +19,17 @@ public class Player : MonoBehaviour
 
     private void OnEnable()
     {
-        foreach (var question in _questions)
-        {
-            question.RightAnswer += AddCoin;
-        }
+        _compositeDisposable = new CompositeDisposable();
+        
+        MessageBrokerHolder.GameActions
+            .Receive<M_Answer>()
+            .Subscribe(message => HandleAnswer(message.IsCorrect))
+            .AddTo(_compositeDisposable);
     }
 
     private void OnDisable()
     {
-        foreach (var question in _questions)
-        {
-            question.RightAnswer -= AddCoin;
-        }
+      _compositeDisposable.Dispose();
     }
 
     private void Update()
@@ -85,9 +85,15 @@ public class Player : MonoBehaviour
         }
     }
 
-    public void AddCoin()
+    private void AddCoin()
     {
         MoneyCount++;
         _text.text = MoneyCount.ToString();
+    }
+    
+    private void HandleAnswer(bool isCorrect)
+    {
+        if (isCorrect)
+            AddCoin();
     }
 }
